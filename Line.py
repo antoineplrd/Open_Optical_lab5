@@ -1,3 +1,6 @@
+from Lightpath import Lightpath
+
+
 class Line:
 
     def __init__(self, label, length, number_of_channel=10):
@@ -5,7 +8,7 @@ class Line:
         self._length = length
         self._successive = dict()
         self._number_of_channel = number_of_channel
-        self._state = [True] * number_of_channel
+        self._state = [1] * number_of_channel
 
     @property
     def label(self):
@@ -46,14 +49,17 @@ class Line:
     def noise_generation(self, signal_power):
         return pow(10, -9) * signal_power * self._length
 
-    def propagate(self, signal_information): # add lightpath
-        #channel = lightpath.channel
-        #self.state[channel] = False
-        signal_information.update_noise_power(self.noise_generation(signal_information.signal_power))
-        signal_information.UpdateLatency(self.latency_generation())
-        return self._successive.get(signal_information.path[0]).propagate(signal_information)
+    def propagate(self, lightpath: Lightpath):
+        self._state[lightpath.channel] = 0  # we change the actual line with channel between 1 and 10 to False
+        lightpath.update_noise_power(self.noise_generation(lightpath.signal_power))
+        lightpath.UpdateLatency(self.latency_generation())
+        return self._successive.get(lightpath.path[1]).propagate(lightpath)
 
     def probe(self, signal_information):
         signal_information.update_noise_power(self.noise_generation(signal_information.signal_power))
         signal_information.UpdateLatency(self.latency_generation())
         return self._successive.get(signal_information.path[0]).probe(signal_information)
+
+    @property
+    def number_of_channel(self):
+        return self._number_of_channel

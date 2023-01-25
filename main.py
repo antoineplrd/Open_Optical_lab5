@@ -1,7 +1,5 @@
-# Lab 4 - Open Optical Network ANTOINE POUILLARD
-import networkx as nx
+# Lab 5 - Open Optical Network ANTOINE POUILLARD
 from matplotlib import pyplot as plt
-import string
 import random
 from Network import Network
 from Connection import Connection
@@ -10,7 +8,6 @@ from tabulate import tabulate
 
 def main():
     network = Network()
-
     nodeValue = 'ABCDEF'
     signal_power = 0.001
 
@@ -25,10 +22,13 @@ def main():
 
         connections = Connection(inputNode, outputNode, signal_power)
 
-        network.stream(connections, 'latency')
-        # network.stream(connections, 'snr')
+        # network.stream(connections, 'latency')
+        network.stream(connections, 'snr')
 
-    # network.draw() # modifier pour mettre le chemin ?
+    # network.draw()
+
+    df = network.chanel_availability()
+    # print(tabulate(df, showindex=True, headers=df.columns))
 
 
 if "__main__" == __name__:

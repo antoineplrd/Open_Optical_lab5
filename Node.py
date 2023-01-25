@@ -1,11 +1,12 @@
 class Node:
 
-    def __init__(self, label, position, connected_nodes):
+    def __init__(self, label, position, connected_nodes, switching_matrix, transceiver="fixed_rate"):
         self._label = label
         self._position = tuple(position)
         self._connected_nodes = connected_nodes
         self._successive = dict()
-        self._switching_matrix = None
+        self._switching_matrix = switching_matrix
+        self._transceiver = transceiver
 
     @property
     def label(self):
@@ -23,6 +24,14 @@ class Node:
     def successive(self):
         return self._successive
 
+    @property
+    def switching_matrix(self):
+        return self._switching_matrix
+
+    @property
+    def transceiver(self):
+        return self._transceiver
+
     @label.setter
     def label(self, value):
         self._label = value
@@ -39,18 +48,38 @@ class Node:
     def successive(self, value):
         self._successive = value
 
-    def propagate(self, signal_information):
-        path = signal_information.path[:]
-        signal_information.UpdatePath_CrossedNode()
+    @switching_matrix.setter
+    def switching_matrix(self, switching_matrix):
+        self._switching_matrix = switching_matrix
+
+    @transceiver.setter
+    def transceiver(self, transceiver):
+        self._transceiver = transceiver
+
+    def propagate(self, signal_information, is_first=False):
+        path = signal_information.path
+        if not is_first:
+            if len(path) > 2:
+                if signal_information.channel > 1:
+                    self._switching_matrix[path[0]][path[2]][signal_information.channel - 1] = 0
+                if signal_information.channel < 9:
+                    self._switching_matrix[path[0]][path[2]][signal_information.channel + 1] = 0
+                self._switching_matrix[path[0]][path[2]][signal_information.channel] = 0
+            signal_information.UpdatePath_CrossedNode()
         if len(path) > 1:
-            return self._successive.get(path[0]+path[1]).propagate(signal_information)
+            signal_information = self._successive.get(path[0]+path[1]).propagate(signal_information)
+            return signal_information
         else:
+            signal_information.UpdatePath_CrossedNode()
+
             return signal_information
 
     def probe(self, signal_information):
         path = signal_information.path[:]
         signal_information.UpdatePath_CrossedNode()
         if len(path) > 1:
+
             return self._successive.get(path[0] + path[1]).probe(signal_information)
+
         else:
             return signal_information

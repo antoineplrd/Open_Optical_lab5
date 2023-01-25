@@ -6,8 +6,7 @@ class Connection:
         self._signal_power = signal_power
         self._latency = 0
         self._snr = 0
-
-
+        self._bit_rate = None
 
     @property
     def input(self):
