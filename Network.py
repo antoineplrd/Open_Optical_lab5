@@ -10,9 +10,9 @@ from Connection import Connection
 from Line import Line
 from Signal_information import Signal_information
 from tabulate import tabulate
-from itertools import chain
 import numpy as np
 from scipy.special import erfcinv
+from statistics import mean
 
 
 class Network:
@@ -20,7 +20,7 @@ class Network:
         self._nodes = dict()
         self._lines = dict()
 
-        open_Json = open("nodes_full_flex_rate.json", "r")
+        open_Json = open("nodes_full_fixed_rate.json", "r")
         data = json.loads(open_Json.read())
 
         for i in data:
@@ -38,7 +38,7 @@ class Network:
             node = Node(label, (connected_lines[0], connected_lines[1]), connected_nodes,
                         switching_matrix, transceiver)
             self._nodes.update({label: node})
-            #print(self._nodes.get(i).switching_matrix) print of the switching matrix for each node
+            # print(self._nodes.get(i).switching_matrix) print of the switching matrix for each node
 
         open_Json.close()
 
@@ -223,7 +223,6 @@ class Network:
         return result_path
 
     def stream(self, connection, label="latency"):
-
         input = connection.input
         output = connection.output
         signal_power = connection.signal_power
@@ -236,14 +235,13 @@ class Network:
 
             if final_path_snr != ['']:
                 bit_rate = self.calculate_bit_rate(final_path_snr, self._nodes.get(
-                                                                        final_path_snr[0]).transceiver)
+                    final_path_snr[0]).transceiver)
 
                 if bit_rate != 0:
-                    print(bit_rate)
-                    connection.bit_rate = bit_rate
                     signal_information = Lightpath(freq_channel, signal_power, final_path_snr)
                     propagate_snr = self.propagate(signal_information)
-                    connection.snr = propagate_snr.snr
+                    connection.snr = 10 * math.log10(propagate_snr.signal_power / propagate_snr.noise_power)
+                    connection.bit_rate = bit_rate
 
                 else:
                     print("Connection rejected, path does not meet GSNR requirements")
@@ -262,6 +260,7 @@ class Network:
                 propagate_latency = self.propagate(signal_information)
 
                 connection.latency = propagate_latency.latency
+                print(connection.latency)
             else:
                 connection.latency = 'None'
 
@@ -315,11 +314,13 @@ class Network:
 
     def calculate_bit_rate(self, path, strategy):
         path_list = '->'.join(path)  # change the list of string in A->B->C
-        filtered_gsnr = self._weighted_paths.query("Paths == @path_list")  # check if the path parameter is in the dataframe
-        gsnr = filtered_gsnr.iloc[0]['Signal/noise (dB)']  # get the value of the gnsr according to the path
+        filtered_snr = self._weighted_paths.query(
+            "Paths == @path_list")  # check if the path parameter is in the dataframe
+        snr = filtered_snr.iloc[0]['Signal/noise (dB)']  # get the value of the gnsr according to the path
         ber_t = 10 ** -3
         rs = 32 * 10 ** 9  # symbol rate
         bn = 12.5 * 10 ** 9  # noise bandwidth
+        gsnr = snr - 10 * log10(rs * ber_t / bn)
 
         if strategy == "fixed_rate":
             if gsnr >= 2 * erfcinv(2 * ber_t) ** 2 * rs / bn:
@@ -339,3 +340,19 @@ class Network:
 
         elif strategy == "shannon":
             return 2 * rs * math.log2(1 + (gsnr * rs / bn))  # return the maximum theoretical Shannon rate
+
+    @staticmethod
+    def histogram_accepted_connections(bit_rates):
+        if len(bit_rates) > 0:
+            total_capacity = sum(bit_rates)
+            print(total_capacity * 10 ** 9)
+            average_bit_rates = mean(bit_rates)
+            plt.hist(bit_rates, bins=100)
+            plt.xlabel('Bit Rate (Gbps)')
+            plt.ylabel('Count')
+            plt.title('Histogram of Accepted Connection Bit Rates | Average bit rates {}'.
+                      format(round(average_bit_rates, 2)))  # return 2 number of the coma ( round)
+            plt.show()
+        else:
+            print("All path does not reach the minimum GSNR requirement for the"
+                  "specified transceiver strategy ")

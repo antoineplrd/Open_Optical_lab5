@@ -10,6 +10,7 @@ def main():
     network = Network()
     nodeValue = 'ABCDEF'
     signal_power = 0.001
+    bit_rates = list()
 
     for i in range(0, 100):
         inputNode = random.choice(nodeValue)
@@ -20,14 +21,15 @@ def main():
             if inputNode != outputNode:
                 break
 
-        connections = Connection(inputNode, outputNode, signal_power)
+        connections = Connection("A", "B", signal_power)
 
         # network.stream(connections, 'latency')
         network.stream(connections, 'snr')
+        if connections.bit_rate is not None:
+            bit_rates.append(connections.bit_rate * 10 ** -9)
 
     # network.draw()
-
-    df = network.chanel_availability()
+    network.histogram_accepted_connections(bit_rates)
     # print(tabulate(df, showindex=True, headers=df.columns))
 
 

@@ -47,3 +47,11 @@ class Connection:
     @snr.setter
     def snr(self, snr):
         self._snr = snr
+
+    @property
+    def bit_rate(self):
+        return self._bit_rate
+
+    @bit_rate.setter
+    def bit_rate(self, bit_rate):
+        self._bit_rate = bit_rate

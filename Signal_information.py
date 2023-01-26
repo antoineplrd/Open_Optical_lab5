@@ -4,7 +4,6 @@ class Signal_information:
         self._signal_power = signal_power
         self._noise_power = 0
         self._latency = 0
-        self._snr = 0
         self._path = path
 
     @property
@@ -18,10 +17,6 @@ class Signal_information:
     @property
     def latency(self):
         return self._latency
-
-    @property
-    def snr(self):
-        return self._snr
 
     @property
     def path(self):
@@ -38,10 +33,6 @@ class Signal_information:
     @latency.setter
     def latency(self, x):
         self._latency = x
-
-    @snr.setter
-    def snr(self, x):
-        self._snr = x
 
     @path.setter
     def path(self, x):
